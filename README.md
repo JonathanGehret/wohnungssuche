@@ -17,13 +17,18 @@ Alle Zahlen stehen in **[`suche.yml`](suche.yml)**. Zum Ändern:
 Der nächste Lauf benutzt automatisch die neuen Werte. Kein Code, kein Terminal.
 
 ```yaml
-max_warm: 600     # Obergrenze Warmmiete (Gesamtmiete)
-max_kalt: 450     # Obergrenze Kaltmiete
+max_warm: 600        # Obergrenze Warmmiete (Gesamtmiete)
+max_kalt: 450        # Obergrenze Kaltmiete
 min_qm: 28
 max_qm: 50
+nur_unbefristet: true  # keine Zwischenmiete / befristeten Angebote
 radius_km: 30
 staedte: [ ... ]
 ```
+
+> `nur_unbefristet: true` ist wichtig: ohne diesen Filter bestehen die Treffer in
+> München fast nur aus Kurzzeit-Untermieten (Oktoberfest, Urlaubsvertretung, ein
+> paar Wochen). Auf `false` setzen, wenn dich Zwischenmiete auch interessiert.
 
 ### Warum zwei Preisgrenzen?
 

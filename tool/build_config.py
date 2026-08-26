@@ -42,7 +42,7 @@ def naechster_radius(km):
     return min(ERLAUBTE_RADIEN_KM, key=lambda stufe: abs(stufe - km))
 
 
-def baue_url(stadt_id, min_qm, max_qm, max_warm, radius_km):
+def baue_url(stadt_id, min_qm, max_qm, max_warm, radius_km, nur_unbefristet=True):
     """Eine WG-gesucht-Suche für 1-Zimmer-Wohnungen in einer Stadt.
 
     Die Preisspanne beginnt bei 0: eine untere Grenze würde günstige
@@ -50,10 +50,14 @@ def baue_url(stadt_id, min_qm, max_qm, max_warm, radius_km):
     """
     radius_m = naechster_radius(radius_km) * 1000
     rent_range = quote(f"0,{max_warm}")
+    # rent_types: 2 = unbefristet, 1/3 = befristet bzw. Zwischenmiete.
+    # Ohne Filter besteht das Ergebnis fast nur aus Kurzzeit-Untermieten.
+    rent_types = "&rent_types%5B%5D=2" if nur_unbefristet else (
+        "&rent_types%5B%5D=2&rent_types%5B%5D=1&rent_types%5B%5D=3")
     return (
         f"https://www.wg-gesucht.de/1-zimmer-wohnungen-in-Oberbayern.{stadt_id}.1.1.0.html"
         f"?categories%5B%5D=1"
-        f"&rent_types%5B%5D=2&rent_types%5B%5D=1&rent_types%5B%5D=3"
+        f"{rent_types}"
         f"&min_size={min_qm}&max_size={max_qm}"
         f"&rent_range={rent_range}&rMin=0&rMax={max_warm}"
         f"&sMin={min_qm}&sMax={max_qm}"
@@ -70,6 +74,7 @@ def main():
     max_kalt = _int_env("OVERRIDE_MAX_KALT", int(cfg["max_kalt"]))
     radius_km = _int_env("OVERRIDE_RADIUS_KM", int(cfg["radius_km"]))
     min_qm, max_qm = int(cfg["min_qm"]), int(cfg["max_qm"])
+    nur_unbefristet = bool(cfg.get("nur_unbefristet", True))
     staedte = cfg["staedte"]
 
     if max_kalt > max_warm:
@@ -82,7 +87,7 @@ def main():
     urls = []
     for stadt in staedte:
         urls.append(f"  # {stadt['name']} ({naechster_radius(radius_km)} km Umkreis)")
-        urls.append(f"  - {baue_url(stadt['id'], min_qm, max_qm, max_warm, radius_km)}")
+        urls.append(f"  - {baue_url(stadt['id'], min_qm, max_qm, max_warm, radius_km, nur_unbefristet)}")
 
     with open(TEMPLATE, encoding="utf-8") as fh:
         template = fh.read()
@@ -114,6 +119,7 @@ def main():
         f"config.yaml erzeugt: {len(staedte)} Städte, "
         f"{min_qm}-{max_qm} m², max {max_warm} EUR warm / {max_kalt} EUR kalt, "
         f"{naechster_radius(radius_km)} km Umkreis"
+        + (", nur unbefristet" if nur_unbefristet else ", auch befristet")
     )
     return 0
 

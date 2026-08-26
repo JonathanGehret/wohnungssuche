@@ -16,6 +16,11 @@ max_kalt: 450     # absolute Obergrenze Kaltmiete (~150 EUR NK eingerechnet)
 min_qm: 28
 max_qm: 50
 
+# --- Nur unbefristete Wohnungen? ---
+# true  = keine Zwischenmiete / befristete Angebote (Standard: du suchst ein Zuhause)
+# false = auch befristete Angebote und Zwischenmiete anzeigen
+nur_unbefristet: true
+
 # --- Suchradius um jede Stadt (km) ---
 # WG-gesucht erlaubt u.a. 0, 5, 10, 15, 20, 30, 40, 50
 radius_km: 30

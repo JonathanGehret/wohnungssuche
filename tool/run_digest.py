@@ -157,10 +157,18 @@ def main():
 
     new_exposes = list(hunter.hunt_flats())
 
-    apprise_urls = config.get("apprise", []) or []
+    apprise_urls = [u for u in (config.get("apprise", []) or []) if u and "@" in str(u)]
     if apprise_urls:
+        # Nur versuchen, wenn wirklich Zugangsdaten dahinterstehen - sonst
+        # scheitert der IMAP-Login mit einem nichtssagenden AttributeError.
         immowelt_listings = fetch_new_immowelt_listings(apprise_urls[0], logger=logger)
         new_exposes.extend(immowelt_listings)
+    else:
+        logger.warning(
+            "FLATHUNTER_APPRISE_URL ist nicht gesetzt - Immowelt-Mails werden "
+            "uebersprungen und es wird keine E-Mail verschickt. Secret im Repo "
+            "unter Settings > Secrets and variables > Actions anlegen."
+        )
 
     vorher = len(new_exposes)
     new_exposes = filtere_nach_preis(new_exposes, lade_limits())
