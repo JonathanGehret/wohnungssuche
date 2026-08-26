@@ -76,10 +76,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-          if git diff --quiet wohnungssuche/tool/state/processed_ids.db; then
+          if git diff --quiet tool/state/processed_ids.db; then
             echo "Keine Änderungen an processed_ids.db – kein Commit nötig"
           else
-            git add wohnungssuche/tool/state/processed_ids.db
+            git add tool/state/processed_ids.db
             git commit -m "chore: update seen-listings state"
             git push
           fi
