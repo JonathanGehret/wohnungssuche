@@ -11,6 +11,7 @@ Flathunter selbst keine Einzel-Benachrichtigungen verschickt - dieses
 Skript übernimmt den Versand komplett.
 """
 import argparse
+import html
 import os
 import re
 import sys
@@ -109,6 +110,47 @@ def filtere_nach_preis(exposes: list, limits: dict) -> list:
     return behalten
 
 
+def _esc(wert) -> str:
+    """Escaped Text, damit Sonderzeichen das HTML nicht zerlegen."""
+    return html.escape(str(wert if wert is not None else "N/A"), quote=True)
+
+
+def format_digest_html(exposes: list) -> str:
+    """Baut die Digest-Mail als HTML - der Titel ist ein anklickbarer Link."""
+    karten = []
+    for expose in exposes:
+        url = str(expose.get("url") or "").strip()
+        titel = _esc(expose.get("title", "N/A"))
+        # Ohne brauchbare URL bleibt der Titel einfach unverlinkt.
+        kopf = (
+            f'<a href="{_esc(url)}" style="color:#1a5fb4;text-decoration:none;font-weight:600;">{titel}</a>'
+            if url.startswith("http") else f"<strong>{titel}</strong>"
+        )
+        fuss = (
+            f'<div style="margin-top:6px;">'
+            f'<a href="{_esc(url)}" style="color:#1a5fb4;">Angebot ansehen &rarr;</a></div>'
+            if url.startswith("http") else ""
+        )
+        karten.append(
+            '<div style="margin:0 0 18px 0;padding:12px 14px;border:1px solid #dcdcdc;'
+            'border-radius:6px;font-family:Arial,Helvetica,sans-serif;font-size:14px;'
+            'line-height:1.5;color:#222;">'
+            f'<div style="font-size:12px;color:#666;">{_esc(expose.get("crawler", "N/A"))}</div>'
+            f'<div style="font-size:15px;margin:2px 0 6px 0;">{kopf}</div>'
+            f'<div>Ort: {_esc(expose.get("address", "N/A"))}</div>'
+            f'<div>Zimmer: {_esc(expose.get("rooms", "N/A"))} &middot; '
+            f'Gr&ouml;&szlig;e: {_esc(expose.get("size", "N/A"))} m&sup2; &middot; '
+            f'<strong>{_esc(expose.get("price", "N/A"))} &euro; {preis_basis(expose)}</strong></div>'
+            f'{fuss}</div>'
+        )
+
+    kopfzeile = (
+        f'<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;">'
+        f'<strong>{len(exposes)}</strong> neue Wohnungsangebote gefunden:</p>'
+    )
+    return kopfzeile + "".join(karten)
+
+
 def format_digest(exposes: list) -> str:
     """Baut eine einzige zusammengefasste Nachricht aus mehreren Exposés."""
     blocks = []
@@ -139,7 +181,7 @@ def send_digest(config: Config, message: str) -> None:
     apobj.notify(
         body=message,
         title="Wohnungssuche: neue Angebote",
-        body_format=apprise.NotifyFormat.TEXT,
+        body_format=apprise.NotifyFormat.HTML,
     )
 
 
@@ -187,7 +229,7 @@ def main():
         return
 
     logger.info("%d neue Angebote gefunden - verschicke gesammelten Digest", len(new_exposes))
-    message = format_digest(new_exposes)
+    message = format_digest_html(new_exposes)
     send_digest(config, message)
     logger.info("Digest versendet")
 
