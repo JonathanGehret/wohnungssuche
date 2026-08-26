@@ -1,0 +1,93 @@
+name: Wohnungssuche Scraper
+
+on:
+  schedule:
+    # 3x täglich um 7 Minuten nach der vollen Stunde (07:07, 12:07, 17:07 UTC).
+    # Vorher stündlich (24 Läufe/Tag) — das allein hat das gesamte GitHub-Actions-
+    # Kontingent (2.000 Min/Monat, geteilt über ALLE privaten Repos) aufgebraucht
+    # und damit auch andere Repos blockiert. Bei Bedarf hier wieder erhöhen.
+    - cron: '7 7,12,17 * * *'
+  workflow_dispatch:  # manuelle Auslösung jederzeit im Actions-Tab möglich
+    inputs:
+      max_warm:
+        description: 'Obergrenze Warmmiete für DIESEN Lauf (leer = Wert aus suche.yml)'
+        required: false
+      max_kalt:
+        description: 'Obergrenze Kaltmiete für DIESEN Lauf (leer = Wert aus suche.yml)'
+        required: false
+      radius_km:
+        description: 'Suchradius in km für DIESEN Lauf (leer = Wert aus suche.yml)'
+        required: false
+
+permissions:
+  contents: write  # nötig, um processed_ids.db zurückzucommitten
+
+concurrency:
+  group: wohnungssuche-scrape
+  cancel-in-progress: false  # nicht-abbrechen: neue Läufe warten auf laufende
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # Sicherheitsnetz: verhindert stundenlange Hänger (z.B. Portal antwortet nicht, kein Request-Timeout im Vendor-Code)
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true  # zieht auch tool/flathunter
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install runtime dependencies
+        run: |
+          pip install \
+            PyYAML requests urllib3 lxml beautifulsoup4 \
+            requests-random-user-agent backoff pytz \
+            webdriver-manager apprise python-dotenv \
+            undetected-chromedriver "selenium==4.27.1" \
+            pydantic certifi
+
+      - name: Render config.yaml from template
+        env:
+          FLATHUNTER_APPRISE_URL: ${{ secrets.FLATHUNTER_APPRISE_URL }}
+          OVERRIDE_MAX_WARM: ${{ github.event.inputs.max_warm }}
+          OVERRIDE_MAX_KALT: ${{ github.event.inputs.max_kalt }}
+          OVERRIDE_RADIUS_KM: ${{ github.event.inputs.radius_km }}
+        run: |
+          cd tool
+          python build_config.py
+          envsubst < config.yaml > config.rendered.yaml
+          mv config.rendered.yaml config.yaml
+
+      - name: Run flathunter (gesammelter Digest)
+        env:
+          FLATHUNTER_DATABASE_LOCATION: ${{ github.workspace }}/tool/state
+          FLATHUNTER_HEADLESS_BROWSER: '1'
+        run: |
+          cd tool
+          python run_digest.py --config config.yaml
+
+      - name: Commit state updates if changed
+        run: |
+          cd "${{ github.workspace }}"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          if git diff --quiet wohnungssuche/tool/state/processed_ids.db; then
+            echo "Keine Änderungen an processed_ids.db – kein Commit nötig"
+          else
+            git add wohnungssuche/tool/state/processed_ids.db
+            git commit -m "chore: update seen-listings state"
+            git push
+          fi
+        continue-on-error: true  # nicht fehlschlagen, falls keine Commits nötig sind
+
+      - name: Show scrape summary
+        if: always()
+        run: |
+          echo "## Scraper-Lauf abgeschlossen"
+          echo "- Zeitstempel: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "- Workflow-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

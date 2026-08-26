@@ -1,0 +1,36 @@
+# ============================================================
+#  Wohnungssuche – deine Einstellungen
+#  Diese Datei ist die EINZIGE, die du anfassen musst.
+#  Direkt auf github.com bearbeiten (Stift-Symbol) -> Commit ->
+#  der nächste Lauf nutzt automatisch die neuen Werte.
+# ============================================================
+
+# --- Preisgrenzen (Euro pro Monat) ---
+# WG-gesucht zeigt in der Regel die GESAMTMIETE (warm).
+# Immowelt-Mails / ImmoScout nennen dagegen die KALTMIETE.
+# Deshalb zwei getrennte Obergrenzen:
+max_warm: 600     # absolute Obergrenze Warmmiete
+max_kalt: 450     # absolute Obergrenze Kaltmiete (~150 EUR NK eingerechnet)
+
+# --- Wohnungsgröße (m²) ---
+min_qm: 28
+max_qm: 50
+
+# --- Suchradius um jede Stadt (km) ---
+# WG-gesucht erlaubt u.a. 0, 5, 10, 15, 20, 30, 40, 50
+radius_km: 30
+
+# --- Suchgebiet: Oberbayern ---
+# Die IDs stammen aus dem Städte-Verzeichnis von WG-gesucht.
+# Neue Stadt hinzufügen: Zeile mit name + id ergänzen.
+# Weniger Städte = schnellerer Lauf und weniger Rate-Limiting.
+staedte:
+  - { name: "München",              id: 90   }   # deckt Dachau, FFB, Starnberg, Erding mit ab
+  - { name: "Inning am Ammersee",   id: 7400 }
+  - { name: "Bad Aibling",          id: 7351 }   # Raum Rosenheim
+  - { name: "Holzkirchen",          id: 7239 }   # Raum Miesbach / Tegernsee
+  - { name: "Weilheim i. OB",       id: 7473 }   # Raum Weilheim-Schongau / Garmisch
+  - { name: "Traunstein",           id: 7436 }   # Chiemgau
+  - { name: "Waldkraiburg",         id: 7280 }   # Raum Mühldorf / Altötting
+  - { name: "Neuburg a. d. Donau",  id: 7321 }   # Raum Ingolstadt / Neuburg-Schrobenhausen
+  - { name: "Bad Reichenhall",      id: 7006 }   # Berchtesgadener Land

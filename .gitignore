@@ -1,0 +1,7 @@
+# Aus suche.yml + Template erzeugt, enthaelt die Apprise-URL (Zugangsdaten)
+tool/config.yaml
+tool/limits.yaml
+tool/config.rendered.yaml
+.env
+__pycache__/
+*.pyc

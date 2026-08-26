@@ -1,0 +1,62 @@
+# Flathunter Konfiguration für bayerische Wohnungssuche
+# Dies ist ein Template – das echte config.yaml wird vor jedem Workflow-Lauf generiert
+
+loop:
+  active: false          # exakt ein Crawl-Durchlauf pro Invocation (GitHub-Cron steuert das Intervall)
+
+database_location: null  # wird zur Laufzeit per FLATHUNTER_DATABASE_LOCATION env-var gesetzt
+
+urls:
+  # --- Region 1: Rosenheim (Aising / Happing / Pang / Stephanskirchen) ---
+  # 28-50m², 500-900€ warm, 15km Umkreis
+  - https://www.wg-gesucht.de/1-zimmer-wohnungen-in-Rosenheim.167.1.1.0.html?categories%5B%5D=1&rent_types%5B%5D=2&rent_types%5B%5D=1&rent_types%5B%5D=3&min_size=28&max_size=50&rent_range=500%2C900&min_rent=500&min_rent=900&offer_filter=1&city_id=167&sort_order=0&noDeact=1&sMin=28&sMax=50&rMin=500&rMax=900&radDis=15000
+
+  # --- Region 2: Ammersee / Inning-Umgebung (Weßling, Germering, Gilching) ---
+  # 28-50m², 550-950€ warm, 15km Umkreis um Inning am Ammersee
+  - https://www.wg-gesucht.de/1-zimmer-wohnungen-in-Inning-a-Ammersee.7400.1.1.0.html?categories%5B%5D=1&rent_types%5B%5D=2&rent_types%5B%5D=1&rent_types%5B%5D=3&min_size=28&max_size=50&rent_range=550%2C950&min_rent=550&min_rent=950&offer_filter=1&city_id=7400&sort_order=0&noDeact=1&sMin=28&sMax=50&rMin=550&rMax=950&radDis=15000
+
+  # Zusatzsuche: Gilching direkt (Teil des Ammersee/Inning-Clusters, eigene Stadt-ID)
+  - https://www.wg-gesucht.de/1-zimmer-wohnungen-in-Gilching.7398.1.1.0.html?categories%5B%5D=1&rent_types%5B%5D=2&rent_types%5B%5D=1&rent_types%5B%5D=3&min_size=28&max_size=50&rent_range=550%2C950&min_rent=550&min_rent=950&offer_filter=1&city_id=7398&sort_order=0&noDeact=1&sMin=28&sMax=50&rMin=550&rMax=950&radDis=15000
+
+  # --- Region 3: Unterfranken / Würzburg ---
+  # 28-50m², 400-800€ warm, 15km Umkreis
+  - https://www.wg-gesucht.de/1-zimmer-wohnungen-in-Wuerzburg.141.1.1.0.html?categories%5B%5D=1&rent_types%5B%5D=2&rent_types%5B%5D=1&rent_types%5B%5D=3&min_size=28&max_size=50&rent_range=400%2C800&min_rent=400&min_rent=800&offer_filter=1&city_id=141&sort_order=0&noDeact=1&sMin=28&sMax=50&rMin=400&rMax=800&radDis=15000
+
+  # --- Region 4: Südliches Münchner Umland (Hohenschäftlarn-Richtung, Richtung Rosenheim) ---
+  # 28-50m², 550-900€ warm, 15km Umkreis
+  # HINWEIS: Ortsbasis ist München (city_id=115) mit Umkreis-Radius,
+  # nicht München-Stadt direkt als Zielort - Preisband 550-900 filtert Innenstadt-Preise ohnehin heraus
+  - https://www.wg-gesucht.de/1-zimmer-wohnungen-in-Muenchen.115.1.1.0.html?categories%5B%5D=1&rent_types%5B%5D=2&rent_types%5B%5D=1&rent_types%5B%5D=3&min_size=28&max_size=50&rent_range=550%2C900&min_rent=550&min_rent=900&offer_filter=1&city_id=115&sort_order=0&noDeact=1&sMin=28&sMax=50&rMin=550&rMax=900&radDis=15000
+
+  # Optional (später): Kleinanzeigen-URLs (brauchen Headless-Chrome, kein Captcha)
+  # - https://www.kleinanzeigen.de/...
+
+  # NICHT hinzufügen (aktuell nicht zuverlässig ohne bezahlten Captcha-Solver):
+  # - ImmoScout24-URLs (zu viel Captcha-Verhalten, nicht wartungsarm)
+
+# IMMOWELT: nicht mehr über direktes Scraping (DataDome-Bot-Schutz blockt mit 403).
+# Stattdessen: gespeicherte Suchen direkt auf immowelt.de anlegen, E-Mail-
+# Benachrichtigungen aktivieren (an dasselbe Gmail-Konto wie oben). Das Skript
+# run_digest.py holt diese Mails per IMAP ab und parst sie (siehe
+# immowelt_mail_parser.py) - kein Scraping, nutzt nur Daten, die Immowelt
+# selbst und beabsichtigt verschickt. Details: siehe SETUP-ANLEITUNG.md Teil 1e.
+
+filters:
+  # Globale Sicherheitsnetz-Filter (nicht die primäre regionale Differenzierung!)
+  # Die echten Grenzen sind in den gespeicherten Portal-Suchen selbst gesetzt (28-50m²)
+  min_size: 28
+  max_size: 50
+  max_price: 950        # absolute Obergrenze über alle Regionen
+
+# WICHTIG: notifiers bleibt LEER! Flathunter selbst verschickt sonst eine
+# einzelne E-Mail PRO Angebot. Stattdessen sammelt run_digest.py (unser eigenes
+# Skript, siehe daneben) alle neuen Angebote eines Laufs und verschickt EINE
+# zusammengefasste E-Mail über dieselbe Apprise-URL unten.
+notifiers: []
+
+apprise:
+  - "${FLATHUNTER_APPRISE_URL}"   # Platzhalter-Token, zur Laufzeit vom Workflow ersetzt; von run_digest.py gelesen
+
+captcha:
+  enabled: false
+  # Falls später Kleinanzeigen-Support nötig: optional FLATHUNTER_2CAPTCHA_KEY oder FLATHUNTER_CAPMONSTER_KEY hinzufügen
