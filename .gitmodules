@@ -1,0 +1,3 @@
+[submodule "tool/flathunter"]
+	path = tool/flathunter
+	url = https://github.com/flathunters/flathunter.git
